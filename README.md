@@ -126,51 +126,51 @@ machine, but the fix is the same either way.)
 for 1 game server). If you configure more game servers in Setup, add the
 matching `559xx:559xx` lines back under `openmu-startup`'s `ports:`.
 
-## Exposing the server without port forwarding (playit.gg)
+## Exposing the server without port forwarding (ZeroTier)
 
-If your ISP uses CGNAT, your router won't let you forward ports, or you just
-don't want to touch router settings, use [playit.gg](https://playit.gg)
-instead. It runs as an extra container (`playit`, already defined in
-`docker-compose.yml`) that opens an *outbound* connection to playit.gg's
-network — nothing needs to be forwarded or opened on your router or Windows
-Firewall, because no inbound connection ever touches your machine directly.
+If your ISP uses CGNAT or your router won't let you forward ports, use
+[ZeroTier](https://www.zerotier.com) instead. It creates a private virtual
+network between your PC and each player's device — everyone gets a stable
+private IP that can reach each other directly, without opening anything to
+the public internet or touching router settings. The trade-off: every player
+has to install the ZeroTier client and join your network once (a couple of
+minutes each), not just type in an address.
 
-Trade-off: the server is only reachable while your PC and Docker are running
-(same as always — this doesn't solve that, only the port-forwarding problem).
+(We initially tried [playit.gg](https://playit.gg) for this, but as of late
+2026 its free tier dropped support for plain TCP tunnels — Premium-only now
+— so ZeroTier is the free route.)
+
+Trade-off shared with every option in this section: the server is only
+reachable while your PC and Docker are running.
 
 ### Setup
 
-1. Sign up at [playit.gg](https://playit.gg) and create a **Docker**-type
-   agent. It shows a `SECRET_KEY` once — copy it.
-2. Put it in your local `.env` (never commit this):
+1. Sign up at [zerotier.com](https://www.zerotier.com), then go to
+   [my.zerotier.com](https://my.zerotier.com) and create a network. Note its
+   16-character **Network ID**.
+2. On your PC (the one running Docker), install the
+   [ZeroTier client](https://www.zerotier.com/download/) and join that
+   network using the Network ID.
+3. Back in the ZeroTier Central dashboard → your network → **Members**: your
+   PC shows up pending authorization. Check the box to **authorize** it, and
+   optionally assign it a fixed IP from the network's range (recommended, so
+   it doesn't change later). Note that IP, e.g. `10.147.20.5`.
+4. Set it in `.env`:
    ```
-   PLAYIT_SECRET_KEY=<paste here>
+   RESOLVE_IP=10.147.20.5
    ```
-3. `docker compose up -d` — the `playit` service starts and should show as
-   connected on your playit.gg dashboard within a few seconds.
-4. In the playit dashboard, create one TCP tunnel per port you need to
-   expose, with **Local Address** set to `openmu-startup` (the container name
-   — not `localhost` or an IP, since the tunnel runs in the same Docker
-   network) and **Local Port** set to OpenMU's own port for that service:
-   - Connect server → local port `44405`
-   - Game server → local port `55901`
-   - Chat server → local port `55980`
-
-   playit assigns a random **Public Port** for each tunnel (shown in the
-   dashboard) — write these down.
-
-5. **Important:** for the **game server** and **chat server** tunnels only
-   (not the connect server), OpenMU itself needs to report the *public* port
-   back to clients, not its internal one. In the admin panel → **Servers**,
-   change that server's listening port to match the **Public Port** playit
-   assigned, then go back to the playit dashboard and update that tunnel's
-   **Local Port** to the same new number. (The connect server doesn't need
-   this — players are given its host:port directly and connect straight to
-   it, no redirect involved.)
-6. Set `RESOLVE_IP` in `.env` to your playit hostname (no port), e.g.
-   `RESOLVE_IP=yourname.at.ply.gg`, then `docker compose up -d` again.
-7. Give players: your playit hostname + the **connect server's** public port,
-   entered into the OpenMU ClientLauncher.
+   (use your actual ZeroTier IP from step 3), then `docker compose up -d`
+   again so OpenMU picks it up.
+5. Allow the game ports through Windows Firewall (run as Administrator in
+   PowerShell):
+   ```powershell
+   New-NetFirewallRule -DisplayName "OpenMU" -Direction Inbound -Protocol TCP -LocalPort 44405,44406,55901,55980 -Action Allow
+   ```
+6. For each friend who wants to join: they install ZeroTier too, join the
+   same network with your Network ID, and you authorize their device in
+   Central (same as step 3). Once authorized, they connect the OpenMU
+   ClientLauncher to **your** ZeroTier IP (`10.147.20.5` in this example) on
+   port `44405`.
 
 ## Exposing the server to the internet
 
