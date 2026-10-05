@@ -15,11 +15,6 @@ services:
     ports:
       - "8080"
       - "55901:55901"
-      - "55902:55902"
-      - "55903:55903"
-      - "55904:55904"
-      - "55905:55905"
-      - "55906:55906"
       - "44405:44405"
       - "44406:44406"
       - "55980:55980"
@@ -43,6 +38,20 @@ services:
     working_dir: /app/
     depends_on:
       - database
+
+  playit:
+    image: ghcr.io/playit-cloud/playit-agent:1.0
+    container_name: playit
+    restart: unless-stopped
+    environment:
+      SECRET_KEY: ${PLAYIT_SECRET_KEY:-}
+    depends_on:
+      - openmu-startup
+    # No `ports:` and no `network_mode: host` here on purpose: this agent only
+    # needs to reach other containers in this same compose project (by their
+    # service name, e.g. "openmu-startup") and to make outbound connections to
+    # playit.gg. Host networking is Linux-only and unreliable on Docker
+    # Desktop for Windows/Mac, so we deliberately don't use it.
 
   database:
     image: postgres

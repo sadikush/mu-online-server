@@ -122,6 +122,56 @@ machine, but the fix is the same either way.)
 | 55901–55906 | Game servers 1–6 (only as many as you configured in Setup) |
 | 55980 | Chat server (in-game messenger) |
 
+`docker-compose.yml` only publishes `55901` by default (this repo is set up
+for 1 game server). If you configure more game servers in Setup, add the
+matching `559xx:559xx` lines back under `openmu-startup`'s `ports:`.
+
+## Exposing the server without port forwarding (playit.gg)
+
+If your ISP uses CGNAT, your router won't let you forward ports, or you just
+don't want to touch router settings, use [playit.gg](https://playit.gg)
+instead. It runs as an extra container (`playit`, already defined in
+`docker-compose.yml`) that opens an *outbound* connection to playit.gg's
+network — nothing needs to be forwarded or opened on your router or Windows
+Firewall, because no inbound connection ever touches your machine directly.
+
+Trade-off: the server is only reachable while your PC and Docker are running
+(same as always — this doesn't solve that, only the port-forwarding problem).
+
+### Setup
+
+1. Sign up at [playit.gg](https://playit.gg) and create a **Docker**-type
+   agent. It shows a `SECRET_KEY` once — copy it.
+2. Put it in your local `.env` (never commit this):
+   ```
+   PLAYIT_SECRET_KEY=<paste here>
+   ```
+3. `docker compose up -d` — the `playit` service starts and should show as
+   connected on your playit.gg dashboard within a few seconds.
+4. In the playit dashboard, create one TCP tunnel per port you need to
+   expose, with **Local Address** set to `openmu-startup` (the container name
+   — not `localhost` or an IP, since the tunnel runs in the same Docker
+   network) and **Local Port** set to OpenMU's own port for that service:
+   - Connect server → local port `44405`
+   - Game server → local port `55901`
+   - Chat server → local port `55980`
+
+   playit assigns a random **Public Port** for each tunnel (shown in the
+   dashboard) — write these down.
+
+5. **Important:** for the **game server** and **chat server** tunnels only
+   (not the connect server), OpenMU itself needs to report the *public* port
+   back to clients, not its internal one. In the admin panel → **Servers**,
+   change that server's listening port to match the **Public Port** playit
+   assigned, then go back to the playit dashboard and update that tunnel's
+   **Local Port** to the same new number. (The connect server doesn't need
+   this — players are given its host:port directly and connect straight to
+   it, no redirect involved.)
+6. Set `RESOLVE_IP` in `.env` to your playit hostname (no port), e.g.
+   `RESOLVE_IP=yourname.at.ply.gg`, then `docker compose up -d` again.
+7. Give players: your playit hostname + the **connect server's** public port,
+   entered into the OpenMU ClientLauncher.
+
 ## Exposing the server to the internet
 
 Don't skip HTTPS if you do this — the admin panel session/password travel in
