@@ -117,14 +117,20 @@ machine, but the fix is the same either way.)
 | Port | Purpose |
 |---|---|
 | 80 | Admin panel / web (nginx) |
-| 44405 | Connect server (original client) |
+| 44405 | Connect server (original/GMO client) |
 | 44406 | Connect server (open source client) |
-| 55901–55906 | Game servers 1–6 (only as many as you configured in Setup) |
+| 55901, 55902 | Game Server 0's two endpoints — GMO client and open source client, respectively |
 | 55980 | Chat server (in-game messenger) |
 
-`docker-compose.yml` only publishes `55901` by default (this repo is set up
-for 1 game server). If you configure more game servers in Setup, add the
-matching `559xx:559xx` lines back under `openmu-startup`'s `ports:`.
+Each game server actually has **two endpoints, one per client type**, each
+with its own port (visible in the admin panel under **Servers** → a game
+server → **Endpoints**) — not just one port per server as you might expect.
+Both need to be published/opened if you want both client types to work; this
+repo opens both for the single game server (Server 0 → 55901 GMO, 55902 open
+source). If you add more game servers in Setup, check each one's own
+Endpoints list for its actual ports (they won't necessarily be the next
+sequential numbers) and add matching `hostport:containerport` lines under
+`openmu-startup`'s `ports:`.
 
 ## Exposing the server without port forwarding (ZeroTier)
 
@@ -162,15 +168,19 @@ reachable while your PC and Docker are running.
    (use your actual ZeroTier IP from step 3), then `docker compose up -d`
    again so OpenMU picks it up.
 5. Allow the game ports through Windows Firewall (run as Administrator in
-   PowerShell):
+   PowerShell). Include **every port shown under each game server's
+   Endpoints list** in the admin panel (see the note in [Ports](#ports) above
+   — there's one port per client type, per game server, not just one):
    ```powershell
-   New-NetFirewallRule -DisplayName "OpenMU" -Direction Inbound -Protocol TCP -LocalPort 44405,44406,55901,55980 -Action Allow
+   New-NetFirewallRule -DisplayName "OpenMU" -Direction Inbound -Protocol TCP -LocalPort 44405,44406,55901,55902,55980 -Action Allow
    ```
 6. For each friend who wants to join: they install ZeroTier too, join the
    same network with your Network ID, and you authorize their device in
-   Central (same as step 3). Once authorized, they connect the OpenMU
-   ClientLauncher to **your** ZeroTier IP (`10.147.20.5` in this example) on
-   port `44405`.
+   Central (same as step 3). Once authorized, they connect to **your**
+   ZeroTier IP (`10.147.20.5` in this example) using whichever client +
+   port matches their client type (`44405` for the original/GMO client via
+   the OpenMU ClientLauncher, `44406` for the open source MuMain client via
+   its own `config.ini`).
 
 ## Exposing the server to the internet
 
