@@ -210,13 +210,52 @@ Before opening this up to real players:
   firewall/router; you generally don't need 80 open once HTTPS works, only
   443 and Let's Encrypt's renewal path.
 
+## Building the server from source
+
+The official `munique/openmu` Docker Hub image can lag the project's GitHub
+`master` branch by months (check the "last pushed" date on
+[Docker Hub](https://hub.docker.com/r/munique/openmu/tags) vs. recent commits
+on [GitHub](https://github.com/MUnique/OpenMU/commits/master) — `docker compose
+pull` only ever gets you that published image, not today's source). If you
+want code that was merged more recently than that image, build it yourself —
+Docker does the compiling, nothing extra to install:
+
+```bash
+git clone https://github.com/MUnique/OpenMU.git
+cd OpenMU
+docker build -t openmu-custom:latest -f src/Startup/Dockerfile src
+```
+
+The first build compiles the whole .NET solution and takes a while. Once it's
+done, point this repo at it instead of the Docker Hub image — in `.env`:
+
+```
+OPENMU_IMAGE=openmu-custom:latest
+```
+
+Then, back in this repo:
+
+```bash
+docker compose up -d
+```
+
+Since a source build can include database schema changes that the published
+image doesn't have, go to the admin panel's **Setup** page afterward and run
+**Update** if it offers one (or **Reload configuration and restart all game
+servers** on the **Servers** page either way).
+
+To pick up newer commits later, `git pull` inside the `OpenMU` folder, rerun
+the `docker build` command, then `docker compose up -d` again here.
+
 ## Operating the server
 
 - Logs: `docker compose logs -f openmu-startup`
 - Stop: `docker compose down` (data persists in the `dbdata` and
   `adminpanel-keys` volumes)
 - Full reset (⚠️ deletes all accounts/characters): `docker compose down -v`
-- Update to the latest OpenMU image: `docker compose pull && docker compose up -d`
+- Update to the latest **published** OpenMU image (not necessarily the latest
+  source — see [Building the server from source](#building-the-server-from-source)
+  above): `docker compose pull && docker compose up -d`
 
 ## Credits
 

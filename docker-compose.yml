@@ -10,7 +10,10 @@ services:
       - openmu-startup
 
   openmu-startup:
-    image: munique/openmu
+    # Defaults to the official (often stale) Docker Hub image. Set OPENMU_IMAGE
+    # in .env to a locally-built tag (see README's "Building the server from
+    # source" section) to run code newer than that published image.
+    image: ${OPENMU_IMAGE:-munique/openmu}
     container_name: openmu-startup
     ports:
       - "8080"
