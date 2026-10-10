@@ -17,11 +17,11 @@ services:
     container_name: openmu-startup
     ports:
       - "8080"
-      - "55901:55901"
-      - "55902:55902"
+      - "45901:45901"
+      - "45902:45902"
       - "44405:44405"
       - "44406:44406"
-      - "55980:55980"
+      - "45980:45980"
     environment:
       DB_HOST: ${DB_HOST:-database}
       DB_ADMIN_USER: ${DB_ADMIN_USER:-}

@@ -119,18 +119,25 @@ machine, but the fix is the same either way.)
 | 80 | Admin panel / web (nginx) |
 | 44405 | Connect server (original/GMO client) |
 | 44406 | Connect server (open source client) |
-| 55901, 55902 | Game Server 0's two endpoints — GMO client and open source client, respectively |
-| 55980 | Chat server (in-game messenger) |
+| 45901, 45902 | Game Server 0's two endpoints — GMO client and open source client, respectively |
+| 45980 | Chat server (in-game messenger) |
 
 Each game server actually has **two endpoints, one per client type**, each
 with its own port (visible in the admin panel under **Servers** → a game
 server → **Endpoints**) — not just one port per server as you might expect.
 Both need to be published/opened if you want both client types to work; this
-repo opens both for the single game server (Server 0 → 55901 GMO, 55902 open
+repo opens both for the single game server (Server 0 → 45901 GMO, 45902 open
 source). If you add more game servers in Setup, check each one's own
 Endpoints list for its actual ports (they won't necessarily be the next
 sequential numbers) and add matching `hostport:containerport` lines under
 `openmu-startup`'s `ports:`.
+
+**Note:** game/chat server ports changed from the 559xx range to 459xx in
+October 2026 (OpenMU moved them out of the OS's dynamic/ephemeral port range
+— see [issue #560](https://github.com/MUnique/OpenMU/issues/560)). If you're
+running an image built before that change, or a database initialized before
+it, your actual ports may still be the old 559xx ones — check **Servers** → a
+game server → **Endpoints** in the admin panel rather than assuming.
 
 ## Exposing the server without port forwarding (ZeroTier)
 
@@ -172,7 +179,7 @@ reachable while your PC and Docker are running.
    Endpoints list** in the admin panel (see the note in [Ports](#ports) above
    — there's one port per client type, per game server, not just one):
    ```powershell
-   New-NetFirewallRule -DisplayName "OpenMU" -Direction Inbound -Protocol TCP -LocalPort 44405,44406,55901,55902,55980 -Action Allow
+   New-NetFirewallRule -DisplayName "OpenMU" -Direction Inbound -Protocol TCP -LocalPort 44405,44406,45901,45902,45980 -Action Allow
    ```
 6. For each friend who wants to join: they install ZeroTier too, join the
    same network with your Network ID, and you authorize their device in
@@ -206,7 +213,7 @@ Before opening this up to real players:
 - Create a real admin user and stop relying on the bootstrap credentials.
 - Delete/disable test accounts.
 - Set the correct IP resolver (`Public`, or `Custom` with your domain/IP).
-- Open the game ports (44405/44406, 55901+, 55980) and 443 on your
+- Open the game ports (44405/44406, 45901+, 45980) and 443 on your
   firewall/router; you generally don't need 80 open once HTTPS works, only
   443 and Let's Encrypt's renewal path.
 
